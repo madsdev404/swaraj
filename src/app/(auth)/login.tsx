@@ -1,41 +1,85 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useAuth } from '../../hooks/useAuth'; // We will create this hook next
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { styled } from 'nativewind';
+import React from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
+import { supabase } from "@/utils/supabase";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-const StyledTouchableOpacity = styled(TouchableOpacity);
-const StyledActivityIndicator = styled(ActivityIndicator);
+WebBrowser.maybeCompleteAuthSession();
 
-export default function LoginScreen() {
-  const { signInWithGoogle, loading, error } = useAuth();
+export default function LoginPage() {
+  const redirectUri = AuthSession.makeRedirectUri({});
+
+  const handleGoogleSignIn = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUri,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+
+    if (error) {
+      console.error("Error signing in with Google:", error.message);
+      return;
+    }
+
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectUri
+      );
+
+      if (result.type === "success" && result.url) {
+        const urlParts = result.url.split("#");
+        if (urlParts.length > 1) {
+          const urlParams = new URLSearchParams(urlParts[1]);
+          const accessToken = urlParams.get("access_token");
+          const refreshToken = urlParams.get("refresh_token");
+
+          if (accessToken && refreshToken) {
+            const { data: sessionData, error: sessionError } =
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+
+            if (sessionError) {
+              console.error(
+                "Error setting session after OAuth:",
+                sessionError.message
+              );
+            } else if (sessionData.session) {
+              console.log(
+                "Session successfully set in login.tsx:"
+                // sessionData.session
+              );
+            }
+          }
+        }
+      }
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 justify-center items-center bg-white">
-      <StyledView className="p-8 rounded-lg shadow-md w-full max-w-sm">
-        <StyledText className="text-4xl font-bold text-center text-gray-800 mb-6">Swaraj</StyledText>
-        <StyledText className="text-lg text-center text-gray-600 mb-8">
-          Discover and share news that matters to you.
-        </StyledText>
-
-        <StyledTouchableOpacity
-          className="bg-blue-600 py-3 px-6 rounded-lg shadow-md flex-row items-center justify-center"
-          onPress={signInWithGoogle}
-          disabled={loading}
-        >
-          {loading ? (
-            <StyledActivityIndicator color="#fff" />
-          ) : (
-            <StyledText className="text-white text-lg font-bold">Sign in with Google</StyledText>
-          )}
-        </StyledTouchableOpacity>
-
-        {error && (
-          <StyledText className="text-red-500 text-center mt-4">{error}</StyledText>
-        )}
-      </StyledView>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Login</Text>
+      <Button title="Sign in with Google" onPress={handleGoogleSignIn} />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    marginBottom: 20,
+  },
+});

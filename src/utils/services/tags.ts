@@ -1,6 +1,6 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/utils/supabase';
 
-import { Tag } from '../types/supabase';
+import { Tag } from '../../types/supabase';
 
 interface TagResult {
   data: Tag[] | null;

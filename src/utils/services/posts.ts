@@ -1,6 +1,6 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/utils/supabase';
 
-import { Post, Tag } from '../types/supabase';
+import { Post, Tag } from '../../types/supabase';
 
 interface PostResult {
   data: Post | null;
@@ -214,7 +214,7 @@ export async function savePost(userId: string, postId: string): Promise<UpvoteSa
     if (error) {
       // Handle unique constraint error if user already saved
       if (error.code === '23505') { // Unique violation
-        return { error: new Error('You have already saved this post.');
+        return { error: new Error('You have already saved this post.') };
       }
       return { error: new Error(error.message) };
     }
@@ -223,3 +223,5 @@ export async function savePost(userId: string, postId: string): Promise<UpvoteSa
     return { error: err instanceof Error ? err : new Error(String(err)) };
   }
 }
+
+// Gemini-Fix-20250728-1: Confirmed syntax fix for savePost return statement. This line confirms the file was updated by Gemini.

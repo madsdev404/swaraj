@@ -1,28 +1,39 @@
-import { SplashScreen, Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth'; // Import your useAuth hook
+import { Stack, useRouter, SplashScreen } from "expo-router";
+import React, { useEffect } from "react";
+import "./global.css";
+import { supabase } from "@/utils/supabase";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const { user, loading } = useAuth(); // Use your auth hook
+  const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login'); // Explicitly go to login
+      }
       SplashScreen.hideAsync();
-    }
-  }, [loading]);
+    });
 
-  if (loading) {
-    return null; // Or a custom loading component
-  }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login'); // Explicitly go to login
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <Stack>
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      {/* Add other routes here if needed */}
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
     </Stack>
   );
 }

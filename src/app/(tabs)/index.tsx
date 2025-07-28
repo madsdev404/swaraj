@@ -1,27 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
-import { fetchPersonalizedFeed } from "../../utils/services/posts";
-import { Post } from "@/types/supabase";
+import { View, Text, Button, FlatList, ActivityIndicator } from "react-native";
 import { supabase } from "@/utils/supabase";
+import { fetchGlobalFeed } from "../../utils/services/posts";
+import { Post } from "@/types/supabase";
+import { useRouter } from "expo-router";
 
-export default function PersonalizedFeedScreen() {
+export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const loadPersonalizedFeed = async () => {
-      setLoading(true);
-      setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setError("User not logged in.");
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await fetchPersonalizedFeed(user.id);
+    const loadPosts = async () => {
+      const { data, error } = await fetchGlobalFeed();
       if (error) {
         setError(error.message);
       } else if (data) {
@@ -30,14 +22,19 @@ export default function PersonalizedFeedScreen() {
       setLoading(false);
     };
 
-    loadPersonalizedFeed();
+    loadPosts();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
 
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#0000ff" />
-        <Text className="mt-2 text-gray-600">Loading personalized feed...</Text>
+        <Text className="mt-2 text-gray-600">Loading posts...</Text>
       </View>
     );
   }
@@ -46,13 +43,16 @@ export default function PersonalizedFeedScreen() {
     return (
       <View className="flex-1 justify-center items-center">
         <Text className="text-red-500 text-base mb-4">Error: {error}</Text>
+        <Button title="Logout" onPress={handleLogout} />
       </View>
     );
   }
 
   return (
     <View className="flex-1 p-4">
-      <Text className="text-2xl font-bold mb-4">Your Personalized Feed</Text>
+      <Text className="text-red-500 text-xl font-bold mb-4">
+        Global Feed
+      </Text>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -67,9 +67,10 @@ export default function PersonalizedFeedScreen() {
           </View>
         )}
         ListEmptyComponent={
-          <Text className="text-base text-gray-600 mt-5">No personalized posts available. Follow some tags!</Text>
+          <Text className="text-base text-gray-600 mt-5">No posts available.</Text>
         }
       />
+      <Button title="Logout" onPress={handleLogout} />
     </View>
   );
 }

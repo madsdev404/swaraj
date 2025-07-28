@@ -2,19 +2,21 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "outDir": "dist",
-    "rootDir": "src",
-    "module": "CommonJS",
-    "moduleResolution": "node16"
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "src/global.d.ts",
-    "src/nativewind-env.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
     "nativewind-env.d.ts"
   ]
 }
