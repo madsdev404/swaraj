@@ -2,6 +2,7 @@ import { Stack, useRouter, SplashScreen } from "expo-router";
 import React, { useEffect } from "react";
 import "./global.css";
 import { supabase } from "@/utils/supabase";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -28,12 +29,14 @@ export default function RootLayout() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-    </Stack>
+    <QueryProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      </Stack>
+    </QueryProvider>
   );
 }

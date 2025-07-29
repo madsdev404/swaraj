@@ -1,76 +1,129 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Button, FlatList, ActivityIndicator } from "react-native";
-import { supabase } from "@/utils/supabase";
-import { fetchGlobalFeed } from "../../utils/services/posts";
+// src/app/(tabs)/index.tsx
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useQuery } from "@tanstack/react-query";
+import { FlatList, Text, View, TouchableOpacity } from "react-native";
+import { fetchGlobalFeed, upvotePost, savePost } from "@/utils/services/posts";
 import { Post } from "@/types/supabase";
-import { useRouter } from "expo-router";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "@/utils/supabase";
+import { useEffect, useState } from "react";
 
-export default function HomePage() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+export default function GlobalFeedScreen() {
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadPosts = async () => {
-      const { data, error } = await fetchGlobalFeed();
-      if (error) {
-        setError(error.message);
-      } else if (data) {
-        setPosts(data);
-      }
-      setLoading(false);
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
     };
-
-    loadPosts();
+    getUserId();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
+  const { data: posts, isLoading, error, refetch } = useQuery({
+    queryKey: ["global-feed"],
+    queryFn: fetchGlobalFeed,
+  });
+
+  console.log("GlobalFeedScreen - posts:", posts);
+  console.log("GlobalFeedScreen - isLoading:", isLoading);
+  console.log("GlobalFeedScreen - error:", error);
+
+  const handleUpvote = async (postId: string) => {
+    if (!userId) return;
+    await upvotePost(userId, postId);
+    refetch(); // Re-fetch posts to update upvote count (if implemented)
   };
 
-  if (loading) {
+  const handleSave = async (postId: string) => {
+    if (!userId) return;
+    await savePost(userId, postId);
+    refetch(); // Re-fetch posts to update saved status (if implemented)
+  };
+
+  if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text className="mt-2 text-gray-600">Loading posts...</Text>
-      </View>
+      <ThemedView className="flex-1 justify-center items-center">
+        <ThemedText>Loading...</ThemedText>
+      </ThemedView>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500 text-base mb-4">Error: {error}</Text>
-        <Button title="Logout" onPress={handleLogout} />
-      </View>
+      <ThemedView className="flex-1 justify-center items-center">
+        <ThemedText>Error: {error.message}</ThemedText>
+      </ThemedView>
     );
   }
 
-  return (
-    <View className="flex-1 p-4">
-      <Text className="text-red-500 text-xl font-bold mb-4">
-        Global Feed
-      </Text>
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View className="bg-gray-100 p-4 my-2 rounded-md w-full">
-            <Text className="text-lg font-bold mb-1">{item.title}</Text>
-            {item.description && <Text className="text-gray-700">{item.description}</Text>}
-            {item.user_name && <Text className="text-xs text-gray-500 mt-1">By: {item.user_name}</Text>}
-            {item.tags && item.tags.length > 0 && (
-              <Text className="text-xs text-blue-600 mt-1">Tags: {item.tags.map(tag => tag.name).join(', ')}</Text>
-            )}
-          </View>
+  const renderItem = ({ item }: { item: Post }) => (
+    <View className="bg-white rounded-lg shadow-sm p-4 mb-3 mx-2">
+      <View className="flex-row items-center mb-2">
+        {item.user_avatar_url && (
+          <Image
+            source={{ uri: item.user_avatar_url }}
+            className="w-8 h-8 rounded-full mr-2"
+          />
         )}
+        <ThemedText className="text-sm text-gray-600">
+          {item.user_name || "Anonymous"} • {new Date(item.created_at).toLocaleDateString()}
+        </ThemedText>
+      </View>
+      <ThemedText type="subtitle" className="text-lg font-bold text-gray-900 mt-1">
+        {item.title}
+      </ThemedText>
+      {item.description && (
+        <ThemedText className="text-base text-gray-700 mt-1">
+          {item.description}
+        </ThemedText>
+      )}
+      {item.image_url && (
+        <Image
+          source={{ uri: item.image_url }}
+          className="w-full h-48 rounded-md mt-3"
+          contentFit="cover"
+        />
+      )}
+      {item.tags && item.tags.length > 0 && (
+        <View className="flex-row flex-wrap mt-2">
+          {item.tags.map((tag) => (
+            <Text key={tag.id} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">
+              {tag.name}
+            </Text>
+          ))}
+        </View>
+      )}
+      <View className="flex-row justify-around mt-3">
+        <TouchableOpacity onPress={() => handleUpvote(item.id)} className="flex-row items-center">
+          <Ionicons name="arrow-up-circle-outline" size={20} color="gray" />
+          <ThemedText className="ml-1 text-gray-600">Upvote</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleSave(item.id)} className="flex-row items-center">
+          <Ionicons name="bookmark-outline" size={20} color="gray" />
+          <ThemedText className="ml-1 text-gray-600">Save</ThemedText>
+        </TouchableOpacity>
+        {item.lat && item.lng && (
+          <TouchableOpacity className="flex-row items-center">
+            <Ionicons name="location-outline" size={20} color="gray" />
+            <ThemedText className="ml-1 text-gray-600">Location</ThemedText>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  return (
+    <ThemedView className="flex-1 bg-gray-100">
+      <FlatList
+        data={posts?.data || []}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text className="text-base text-gray-600 mt-5">No posts available.</Text>
+          <ThemedText className="text-center mt-10 text-gray-500">No posts available.</ThemedText>
         }
       />
-      <Button title="Logout" onPress={handleLogout} />
-    </View>
+    </ThemedView>
   );
 }

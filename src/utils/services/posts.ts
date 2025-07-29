@@ -1,6 +1,6 @@
 import { supabase } from '@/utils/supabase';
 
-import { Post, Tag } from '../../types/supabase';
+import { Post } from '../../types/supabase';
 
 interface PostResult {
   data: Post | null;
@@ -108,11 +108,12 @@ export async function createPost(postData: {
 
 export async function fetchGlobalFeed(): Promise<PostsResult> {
   try {
+    console.log("Attempting to fetch global feed...");
     const { data, error } = await supabase
       .from('posts')
       .select(`
         *,
-        users (name, avatar_url),
+        user_id (name, avatar_url),
         post_tags (
           tags (id, name)
         )
@@ -120,6 +121,7 @@ export async function fetchGlobalFeed(): Promise<PostsResult> {
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error("Error fetching global feed:", error.message);
       return { data: null, error: new Error(error.message) };
     }
 
@@ -131,8 +133,10 @@ export async function fetchGlobalFeed(): Promise<PostsResult> {
       tags: post.post_tags.map((pt: any) => pt.tags), // Assuming pt.tags is the actual tag object
     }));
 
+    console.log("Global feed fetched successfully. Number of posts:", formattedData.length);
     return { data: formattedData as Post[], error: null };
   } catch (err) {
+    console.error("Exception in fetchGlobalFeed:", err);
     return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
   }
 }
@@ -160,7 +164,7 @@ export async function fetchPersonalizedFeed(userId: string): Promise<PostsResult
       .from('posts')
       .select(`
         *,
-        users (name, avatar_url),
+        user_id (name, avatar_url),
         post_tags (
           tags (id, name)
         )

@@ -1,5 +1,10 @@
 # Swaraj App
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Built with Expo](https://img.shields.io/badge/Built%20with-Expo-000.svg?style=flat&logo=EXPO&logoColor=fff)](https://expo.dev/)
+[![Powered by React Native](https://img.shields.io/badge/Powered%20by-React%20Native-20232A?style=flat&logo=REACT&logoColor=61DAFB)](https://reactnative.dev/)
+
+
 ## Overview
 
 Swaraj is a Reddit-style mobile application built with React Native (Expo) and Supabase. It features Google Sign-In, global and personalized feeds, and post creation. The app aims to provide a platform for sharing and discovering content, with a focus on modern UI/UX and scalability.
@@ -20,12 +25,14 @@ Swaraj is a Reddit-style mobile application built with React Native (Expo) and S
 ## Features
 
 ### Core Features
+
 - **Google Sign-In:** Secure authentication via Supabase.
 - **Global Feed:** View all posts from the community.
 - **Personalized Feed:** Discover posts filtered by tags you follow.
 - **Create Post:** Easily create and share new posts with optional images and location tagging.
 
 ### Bonus Features
+
 - **Image Upload:** Attach images to your posts.
 - **Location Tagging:** Add location data to your posts.
 - **Upvote/Save Functionality:** Interact with posts by upvoting or saving them.
@@ -48,6 +55,7 @@ The application uses the following Supabase tables:
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js and npm/yarn installed.
 - Expo CLI installed (`npm install -g expo-cli`).
 - Supabase project set up with the above schema and Google Auth enabled.
@@ -57,7 +65,7 @@ The application uses the following Supabase tables:
 
 1.  Clone the repository:
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/madsdev404/swaraj.git
     cd swaraj
     ```
 2.  Install dependencies:
